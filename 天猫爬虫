@@ -1,0 +1,74 @@
+class Content():
+    def __init__(self,topic,body,url):
+        self.topic = topic
+        self.body = body
+        self.url = url
+        
+    def print(self):
+        print('new article found for topic:{}'.format(self.topic))
+        print('body:{}'.format(self.body))
+        print('url:{}'.format(self.url))
+        print()
+        print('~'*100)
+        print()
+        
+class Website():
+    def __init__(self,name,url,searchUrl,resultListing,resultUrl,absoluteUrl,bodyTag):
+        self.name = name
+        self.url = url
+        self.searchUrl = searchUrl
+        self.resultListing = resultListing
+        self.resultUrl = resultUrl         #选择器
+        self.absoluteUrl = absoluteUrl     #判断是相对url还是绝对url
+        self.bodyTag = bodyTag
+        
+import requests
+from bs4 import BeautifulSoup
+import time
+class Crawler:
+    def getPage(self,url):
+        try:
+            req = requests.get(url)
+        except requests.exceptions.RequestException:
+            return None
+        return BeautifulSoup(req.text,'html.parser')
+    
+    def safeGet(self,pageobj,selector):
+        childobj = pageobj.select(selector)
+        if childobj is not None and len(childobj)>0:
+            for i in range(0,len(childobj)):
+                childobj[i] = childobj[i].text
+            body = '\n'.join(childobj)
+            return body
+        return ''
+    
+    def search(self,topic,site):
+        bs = self.getPage(site.searchUrl+topic)
+        searchResults = bs.select(site.resultListing)
+        for result in searchResults:
+            url = result.select(site.resultUrl)[0].attrs['href']
+            if(site.absoluteUrl):
+                bs = self.getPage(url)
+            else:
+                bs = self.getPage(site.url+url)
+            if bs is None:
+                print('something was wrong with that page or URL.skipping!')
+                return 
+            body = self.safeGet(bs,site.bodyTag)
+            if body != '':
+                content = Content(topic,body,url)
+                content.print()
+                time.sleep(3)
+                
+crawler = Crawler()
+
+siteData = [['TMall','https:','https://list.tmall.com/search_product.htm?q=',
+       'p.productTitle','a',False,'#J_AttrUL li']]
+
+sites = []
+for row in siteData:
+    sites.append(Website(row[0],row[1],row[2],row[3],row[4],row[5],row[6]))
+topic = input('请输入需要搜索的内容：')
+
+print('GETTING INFO ABOUT {}'.format(topic))
+crawler.search(topic,sites[0])
