@@ -72,3 +72,4 @@ topic = input('请输入需要搜索的内容：')
 
 print('GETTING INFO ABOUT {}'.format(topic))
 crawler.search(topic,sites[0])
+
